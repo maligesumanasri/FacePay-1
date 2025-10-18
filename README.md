@@ -7,8 +7,6 @@ This is my attempt to make a Face Recognition System for facilitating secure tra
 The transaction proceeds when the face is detected, recognised and matched with the registered user otherwise the transaction is terminated.
 
 
-https://www.youtube.com/watch?v=-gx1-4fLTf4&lc=UgwK4QJ7QgIvJNXnCNZ4AaABAg&ab_channel=DiptiSharma
-
 Website link:https://facepay-b93d2.web.app/
 
 <!-- Images -->
