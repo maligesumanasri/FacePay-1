@@ -85,59 +85,93 @@ function startVideo() {
 }
 
 
+// Add this helper function to load base64 images properly
+function createImageFromBase64(base64String) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = base64String;
+  });
+}
+
 // Labeling the refrence image from Database and generating the face descriptor to match further
 
 function loadAndLabelImagesFromDB() {
-  //const labels = ['Black Widow', 'Captain America', 'Hawkeye' , 'Jim Rhodes', 'Tony Stark', 'Thor', 'Captain Marvel']
   const labels = ['known']
-  let i = 0
   return Promise.all(
     labels.map(async (label) => {
-      i++
       const descriptions = []
       message.innerText = `Processing Data...`
-      //const imgURL = `../images/${label}.jpg`
       const imgURL = referencedImageURL
       
       // if the user has not uploaded the profile picture
-      if (imgURL == "null") {
-        swal("Update Profile!", "To start face verification, Please upload the profile picture first in the profile section.\n\nPressing 'OK' will redirect you to profile section.", "warning").then(function(reply) {
+      if (!imgURL || imgURL == "null") {
+        swal("Update Profile!", "To start face verification, Please upload the profile picture first in the profile section.", "warning").then(function(reply) {
           if (reply) window.location.href = "./profile.html"
           else message.innerText = "Please update your profile picture!"
-        })
+        });
+        return null;
       }
-
-      const img = await faceapi.fetchImage(imgURL)
       
-      // detect the face with the highest score in the image and compute it's landmarks and face descriptor
-      const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
-      
-      // storing the generated descriptor into an array called descriptions
-      descriptions.push(detections.descriptor)
-      
-      // returning the label and descriptions 
-      return new faceapi.LabeledFaceDescriptors(label, descriptions)
+      try {
+        // For base64 images, create an HTML image element
+        const img = await createImageFromBase64(imgURL);
+        
+        // detect the face with the highest score in the image and compute its landmarks and face descriptor
+        const detections = await faceapi.detectSingleFace(img)
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+        
+        if (detections) {
+          // storing the generated descriptor into an array called descriptions
+          descriptions.push(detections.descriptor);
+          
+          // returning the label and descriptions 
+          return new faceapi.LabeledFaceDescriptors(label, descriptions);
+        } else {
+          message.innerText = "No face detected in profile image!";
+          swal("No face detected", "Please upload a clear picture showing your face in the profile section.", "warning");
+          return null;
+        }
+      } catch (error) {
+        console.error("Error processing profile image:", error);
+        message.innerText = "Error processing profile image!";
+        return null;
+      }
     })
-  )
+  ).then(results => results.filter(result => result !== null)); // Filter out null results
 }
 
 
 // Face Matching Function
 
 async function matchFace() {
-  // calling loadAndLabelImagesFromDB function to feed it into FaceMatcher of faceapi.js
-  const labeledFaceDescriptors = await loadAndLabelImagesFromDB()
-  // using FaceMatcher API with 60% score which depicts the maximum descriptor distance (i.e. Euclidean Distance)
-  faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6)
+  try {
+    // calling loadAndLabelImagesFromDB function to feed it into FaceMatcher of faceapi.js
+    const labeledFaceDescriptors = await loadAndLabelImagesFromDB();
+    
+    if (!labeledFaceDescriptors || labeledFaceDescriptors.length === 0) {
+      message.innerText = "Could not process profile image. Please update your profile picture.";
+      return;
+    }
+    
+    // using FaceMatcher API with 60% score which depicts the maximum descriptor distance
+    faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
 
-  message.innerText = "Data Processed! and Camera Started!"
-  setTimeout(() => {
-    message.innerText = "To begin! Press 'Start Verification' below."
-    if (showStartBtn) startBtn.classList.replace('hide', 'unhide')
-    else swal("Something went wrong!", "Please refresh the page.", "error").then(function(reply) {
-      if(reply) window.location.reload()
-    })
-  }, 1000)
+    message.innerText = "Data Processed! Camera Started!";
+    setTimeout(() => {
+      message.innerText = "To begin! Press 'Start Verification' below.";
+      if (showStartBtn) startBtn.classList.replace('hide', 'unhide');
+      else swal("Something went wrong!", "Please refresh the page.", "error").then(function(reply) {
+        if(reply) window.location.reload();
+      });
+    }, 1000);
+  } catch (error) {
+    console.error("Error in face matching setup:", error);
+    message.innerText = "Error setting up face verification. Please try again.";
+    swal("Error", "Could not set up face verification. Please try again or update your profile picture.", "error");
+  }
 }
 
 
@@ -148,44 +182,43 @@ async function startFaceRecognition() {
     if (canvas) canvas.remove();
     
     // creating canvas for displaying on webPage
-    canvas = faceapi.createCanvasFromMedia(video)
-    main.appendChild(canvas)
-    const displaySize = { width: video.width, height: video.height }
-    faceapi.matchDimensions(canvas, displaySize)
+    canvas = faceapi.createCanvasFromMedia(video);
+    main.appendChild(canvas);
+    const displaySize = { width: video.width, height: video.height };
+    faceapi.matchDimensions(canvas, displaySize);
     
-    recognizing = async () => {
+    try {
       // Replace faceapi.TinyFaceDetectorOptions() with faceapi.SsdMobilenetv1Options() if using heavier version
-      // Also by default it uses the SsdMobilenetv1Options()
-      const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors()
-      const resizedDetections = faceapi.resizeResults(detections, displaySize)
-      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+      const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
+      const resizedDetections = faceapi.resizeResults(detections, displaySize);
+      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 
-      // finding the best match and generating the result
-      if (!resizedDetections[0]) swal("Face is not detected!", "Please take the shot near better light source.\nOr, Try removing the spectacles/glasses or mask.\nOr, Try updating the profile picture.", "warning")
-      const descriptorResult = resizedDetections[0].descriptor
-      const result = faceMatcher.findBestMatch(descriptorResult)
+      if (!resizedDetections || !resizedDetections[0]) {
+        message.innerText = "No face detected in camera. Please try again.";
+        swal("Face not detected!", "Please ensure good lighting and position your face clearly in the frame.", "warning");
+        return;
+      }
 
-      faceLabel = result._label
-      faceScore = result._distance
+      const descriptorResult = resizedDetections[0].descriptor;
+      const result = faceMatcher.findBestMatch(descriptorResult);
 
-      // console.log(faceLabel)
-      // console.log(faceScore)
+      faceLabel = result._label;
+      faceScore = result._distance;
 
       // if face is detected then display result
-      // also, if don't want to show canvas, just put an exclamation mark before showCanvas -> "!showCanvas" 
       if (descriptorResult && showCanvas) {
-        // drawing canvas on webpage with details on it
-        const box = resizedDetections[0].detection.box
-        // below is canvas box with label
-        // const drawBox = new faceapi.draw.DrawBox(box, { label: result.toString() })
-        const drawBox = new faceapi.draw.DrawBox(box)
-        drawBox.draw(canvas)
+        const box = resizedDetections[0].detection.box;
+        const drawBox = new faceapi.draw.DrawBox(box);
+        drawBox.draw(canvas);
       }
 
       // ready for payment :)
       makePayment();
+    } catch (error) {
+      console.error("Error during face recognition:", error);
+      message.innerText = "Error during face verification. Please try again.";
+      swal("Error", "Something went wrong during face verification. Please try again.", "error");
     }
-    recognizing();
 }
 
 

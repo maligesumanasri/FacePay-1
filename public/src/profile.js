@@ -23,7 +23,6 @@ document.getElementById('logo').addEventListener('click', clickLogoImg);
 document.getElementById('save-btn').addEventListener('click', clickSaveBtn);
 
 
-
 //-----------------------------------------script for css of profile-img-box--------------------------------------------//
 const imgContainer = document.querySelector('.photo-container');
 const img = document.querySelector('#photo');
@@ -41,7 +40,6 @@ imgContainer.addEventListener('mouseleave', function() {
 });
 
 
-
 let currentUser = null;
 let keepLoggedIn = localStorage.getItem("keepLoggedIn");
 //------------------------------fetching data from localStorage to show on profile-------------------------//
@@ -55,12 +53,22 @@ function getUserName() {
 
 getUserName();
 
+// Initialize emailString variable
+let emailString = "";
+
 if (currentUser) {
     let name = currentUser.fullname;
     let email = currentUser.email;
     let username = currentUser.username;
     let phone = currentUser.phone;
     let payid = phone + "@facepay";
+    
+    // Create sanitized email string for Firebase path
+    emailString = email.replaceAll('.', '')
+                       .replaceAll('#', '')
+                       .replaceAll('$', '')
+                       .replaceAll('[', '')
+                       .replaceAll(']', '');
     
     document.getElementById('name').innerText = name;
     document.getElementById('email').innerText = email;
@@ -75,33 +83,28 @@ if (currentUser) {
 }
 
 
-
 //-----------------------------------------Firebase--------------------------------------------//
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.8.1/firebase-analytics.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyC_xmkI67ZokC5S3bs_I4Wn1ZHL9qbsy6E",
-    authDomain: "facepay-b93d2.firebaseapp.com",
-    databaseURL: "https://facepay-b93d2-default-rtdb.firebaseio.com",
-    projectId: "facepay-b93d2",
-    storageBucket: "facepay-b93d2.appspot.com",
-    messagingSenderId: "894989632635",
-    appId: "1:894989632635:web:a14b1f884f00e60bd20ede",
-    measurementId: "G-GPV0QHPX2T"
-};
+    apiKey: "AIzaSyAnEAVg__QSMgu9COS-UWx9_oJDE2bzMRA",
+    authDomain: "today-5d084.firebaseapp.com",
+    databaseURL: "https://today-5d084-default-rtdb.firebaseio.com",
+    projectId: "today-5d084",
+    storageBucket: "today-5d084.firebasestorage.app",
+    messagingSenderId: "67885556598",
+    appId: "1:67885556598:web:c4d69673d9e50bd5e0d057",
+    measurementId: "G-DVDGZEF2VC"
+    };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Storage Database
-import { getStorage, ref as storeRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.8.1/firebase-storage.js";
 
 // Realtime Database
 import { getDatabase, ref, get, child, set, update } from "https://www.gstatic.com/firebasejs/9.8.1/firebase-database.js";
 
 const realdb = getDatabase();
-
 
 
 //-----------------------------------------selection of img from pc--------------------------------------------//
@@ -122,44 +125,54 @@ file.addEventListener('change', function() {
 });
 
 
-
-//-----------------------------------------Uploading Files (Image) to Firebase Storage Database--------------------------------------------//
-let emailString = currentUser.email;
-emailString = emailString.replaceAll('.', '');
-emailString = emailString.replaceAll('#', '');
-emailString = emailString.replaceAll('$', '');
-emailString = emailString.replaceAll('[', '');
-emailString = emailString.replaceAll(']', '');
-
-let URL = currentUser.profileImgURL;
-
-const uploadProcess = async () => {
-    const storage = getStorage();
-    const storageRef = storeRef(storage, "Profile Images/profile-img@" + emailString);
-    const uploadTask = uploadBytesResumable(storageRef, chosenImageToUpload);
+//-----------------------------------------Uploading Files (Image)--------------------------------------------//
+const uploadProcess = () => {
     const uploadMessage = document.getElementById('upload-text');
     
-    uploadTask.on('state-changed', (snapshot) => {
-        const uploadProgress = (snapshot.bytesTransferred / snapshot.totalBytes).toFixed(4) * 100;
-        uploadMessage.classList.replace('hide', 'unhide');
-        uploadMessage.innerHTML = "* * Uploading " + uploadProgress + "% * *";
+    // Show upload in progress message
+    uploadMessage.classList.replace('hide', 'unhide');
+    uploadMessage.innerHTML = "* * Processing Image * *";
+    document.getElementById('save-btn').classList.replace('unhide', 'hide');
+    
+    // Convert image file to base64 string
+    const reader = new FileReader();
+    
+    reader.onload = function(event) {
+        const imageData = event.target.result; // base64 encoded string
+        
+        // Store image in localStorage or sessionStorage based on user preference
+        setImageToStorage(imageData);
+        
+        // Update UI
+        uploadMessage.classList.replace('unhide', 'hide');
+        document.getElementById('save-btn').classList.replace('hide', 'unhide');
+        swal("Photo uploaded successfully!", "", "success");
+    };
+    
+    reader.onerror = function() {
+        swal("Image processing failed!", "Please try again with a different image.", "error");
+        uploadMessage.classList.replace('unhide', 'hide');
         document.getElementById('save-btn').classList.replace('unhide', 'hide');
+    };
+    
+    reader.readAsDataURL(chosenImageToUpload);
+};
 
-    }, (error) => {
-        swal("Image not uploaded!", "", "error");
-    }, () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((imageURL) => {
-            URL = imageURL;
-            setURLtoRealDB(imageURL);
-            setImgToLocalStorage(imageURL);
-            swal("Photo uploaded successfully!", "", "success");
-            uploadMessage.classList.replace('unhide', 'hide');
-            document.getElementById('save-btn').classList.replace('hide', 'unhide');
-        });
-    });
+// New function to store image data
+function setImageToStorage(imageData) {
+    // Add image data to current user object
+    currentUser.profileImgURL = imageData;
+    
+    // Store based on user preference
+    if (keepLoggedIn == "yes") {
+        localStorage.setItem('user', JSON.stringify(currentUser));
+    } else {
+        sessionStorage.setItem('user', JSON.stringify(currentUser));
+    }
+    
+    // If you still want to use the Realtime DB as backup
+    setURLtoRealDB(imageData);
 }
-
-
 
 //-----------------------------------------Setting Image URL to Firebase Realtime Database--------------------------------------------//
 const setURLtoRealDB = (URL) => {
@@ -169,30 +182,16 @@ const setURLtoRealDB = (URL) => {
 }
 
 
-
-//-----------------------------------------Setting Image URL to Local/Session Storage--------------------------------------------//
-function setImgToLocalStorage(URL) {
-    currentUser.profileImgURL = URL;
-
-    if (keepLoggedIn == "yes") {
-        currentUser = localStorage.setItem('user', JSON.stringify(currentUser));
-    } else {
-        currentUser = sessionStorage.setItem('user', JSON.stringify(currentUser));
-    }
-}
-
-
 //We can fetch user profile img either from local storage or from firebase realtime database but fetching from local storage would be faster--------------------------------------------//
 //-----------------------------------------Getting Image URL from Local/Session Storage to show on profile--------------------------------------------//
-function getImgFromLocalStorage(URL) {
-    if (currentUser.profileImgURL != "null") {
-        let photoURL = currentUser.profileImgURL;
-        img.setAttribute('src', URL);
+function getImgFromLocalStorage() {
+    if (currentUser.profileImgURL && currentUser.profileImgURL !== "null") {
+        img.setAttribute('src', currentUser.profileImgURL);
     } else {
         img.setAttribute('src', "../images/profileM.jpg");
     }
 }
-getImgFromLocalStorage(URL);
+getImgFromLocalStorage();
 
 
 //-----------------------------------------Getting Image URL from Firebase Realtime Database--------------------------------------------//

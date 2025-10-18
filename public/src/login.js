@@ -33,14 +33,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.1/firebase
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.8.1/firebase-analytics.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyC_xmkI67ZokC5S3bs_I4Wn1ZHL9qbsy6E",
-    authDomain: "facepay-b93d2.firebaseapp.com",
-    projectId: "facepay-b93d2",
-    storageBucket: "facepay-b93d2.appspot.com",
-    messagingSenderId: "894989632635",
-    appId: "1:894989632635:web:a14b1f884f00e60bd20ede",
-    measurementId: "G-GPV0QHPX2T"
-};
+    apiKey: "AIzaSyAnEAVg__QSMgu9COS-UWx9_oJDE2bzMRA",
+    authDomain: "today-5d084.firebaseapp.com",
+    databaseURL: "https://today-5d084-default-rtdb.firebaseio.com",
+    projectId: "today-5d084",
+    storageBucket: "today-5d084.firebasestorage.app",
+    messagingSenderId: "67885556598",
+    appId: "1:67885556598:web:c4d69673d9e50bd5e0d057",
+    measurementId: "G-DVDGZEF2VC"
+    };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

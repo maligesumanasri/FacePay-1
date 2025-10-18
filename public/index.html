@@ -9,8 +9,39 @@
         <link rel="stylesheet" href="global.css">
         <link rel="icon" href="./images/favicon.png" type="image/icon type">
         <link href="https://fonts.googleapis.com/css?family=Montserrat:500&display=swap" rel="stylesheet">
+        <script src="https://www.gstatic.com/firebasejs/9.8.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.8.1/firebase-database-compat.js"></script>
+        <script>
+            // Initialize Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyAnEAVg__QSMgu9COS-UWx9_oJDE2bzMRA",
+                authDomain: "today-5d084.firebaseapp.com",
+                databaseURL: "https://today-5d084-default-rtdb.firebaseio.com",
+                projectId: "today-5d084",
+                storageBucket: "today-5d084.firebasestorage.app",
+                messagingSenderId: "67885556598",
+                appId: "1:67885556598:web:c4d69673d9e50bd5e0d057",
+                measurementId: "G-DVDGZEF2VC"
+            };
+            
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+        </script>
         <script defer type="text/javascript" src="./script.js"></script>
         <script defer type="module" src="./src/logout.js"></script>
+        <style>
+            .error-message {
+                color: #ff0000;
+                font-size: 12px;
+                margin-top: 5px;
+                display: block;
+                font-family: "Montserrat", sans-serif;
+            }
+            
+            .input-error {
+                border: 1px solid #ff0000 !important;
+            }
+        </style>
     </head>
     <body>
         <header>
@@ -46,15 +77,18 @@
                             <div class="transfer-detail">
                                 <div class="transfer-form wallet-form">
                                     <span class="box-title">Mobile Number</span>
-                                    <input class="box-input" type="text" placeholder="Enter Mobile Number"/>
+                                    <input class="box-input" id="mobile-number" type="text" placeholder="Enter Mobile Number"/>
+                                    <span class="error-message" id="mobile-error"></span>
                                 </div>
                                 <div class="transfer-form wallet-form">
                                     <span class="box-title">FacePay-ID</span>
-                                    <input class="box-input" type="text" placeholder="FacePay-ID"/>
+                                    <input class="box-input" id="facepay-id" type="text" placeholder="FacePay-ID"/>
+                                    <span class="error-message" id="faceid-error"></span>
                                 </div>
                                 <div class="transfer-form wallet-form last-form-input-wallet">
                                     <span class="box-title">Amount</span>
-                                    <input class="box-input" type="text" placeholder="Enter Amount"/>
+                                    <input class="box-input" id="wallet-amount" type="text" placeholder="Enter Amount"/>
+                                    <span class="error-message" id="wallet-amount-error"></span>
                                 </div>        
                             </div>    
                         </div>
@@ -72,19 +106,23 @@
                             <div class="transfer-detail">
                                 <div class="transfer-form bank-form">
                                     <span class="box-title">Beneficiary Name</span>
-                                    <input class="box-input" type="text" placeholder="Name on Bank Account"/>
+                                    <input class="box-input" id="beneficiary-name" type="text" placeholder="Name on Bank Account"/>
+                                    <span class="error-message" id="beneficiary-error"></span>
                                 </div>
                                 <div class="transfer-form bank-form">
                                     <span class="box-title">Account Number</span>
-                                    <input class="box-input" type="text" placeholder="Account Number"/>
+                                    <input class="box-input" id="account-number" type="text" placeholder="Account Number"/>
+                                    <span class="error-message" id="account-error"></span>
                                 </div>
                                 <div class="transfer-form bank-form">
                                     <span class="box-title">IFSC Code</span>
-                                    <input class="box-input" type="text" placeholder="IFSC Code"/>
+                                    <input class="box-input" id="ifsc-code" type="text" placeholder="IFSC Code"/>
+                                    <span class="error-message" id="ifsc-error"></span>
                                 </div>
                                 <div class="transfer-form bank-form last-form-input-bank">
                                     <span class="box-title">Amount</span>
-                                    <input class="box-input" type="text" placeholder="Enter Amount"/>
+                                    <input class="box-input" id="bank-amount" type="text" placeholder="Enter Amount"/>
+                                    <span class="error-message" id="bank-amount-error"></span>
                                 </div>     
                             </div>      
                         </div>
